@@ -72,14 +72,16 @@ struct CustomRunnerEditorView: View {
             )
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(role: .cancel) {
+                    Button {
                         Task {
                             await store.send(.cancelButtonTapped)
                         }
+                    } label: {
+                        Text("cancel", bundle: .module)
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(role: .confirm) {
+                    Button {
                         Task {
                             await store.send(.addButtonTapped)
                         }

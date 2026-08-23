@@ -35,8 +35,8 @@ struct DonationSettingsView: View {
                     Image(nsImage: NSImage.appIcon)
                         .resizable()
                         .scaledToFit()
+                        .frame(width: 32, height: 32)
                 }
-                .labelReservedIconWidth(32)
             }
             Section {
                 ProductView(id: DonationProduct.oneTime.id, prefersPromotionalIcon: true) {

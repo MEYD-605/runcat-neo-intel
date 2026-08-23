@@ -42,7 +42,7 @@ enum IndicatorKind {
         }
     }
 
-    static let customValueLabelMaxWidth = 80.0
+    static let customValueLabelMaxWidth = 180.0
 
     static func customValueLabelSize(for text: String) -> CGSize {
         let font = NSFont.monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)

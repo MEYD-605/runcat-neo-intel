@@ -27,7 +27,6 @@ public struct SettingsWindowScene: Scene {
         Settings {
             SettingsView()
                 .windowResizeBehavior(.enabled)
-                .windowResizeAnchor(.topLeading)
         }
     }
 }

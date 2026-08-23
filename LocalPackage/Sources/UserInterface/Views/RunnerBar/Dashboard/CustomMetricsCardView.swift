@@ -50,7 +50,7 @@ struct CustomMetricsCardView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(verbatim: snapshot.title)
                 Group {
-                    ForEach(snapshot.metrics.enumerated(), id: \.offset) { _, metric in
+                    ForEach(Array(snapshot.metrics.enumerated()), id: \.offset) { _, metric in
                         Text(verbatim: "\(metric.title): \(metric.formattedValue)")
                             .font(.caption)
                         if let normalizedValue = metric.normalizedValue {

@@ -10,7 +10,7 @@ let package = Package(
     name: "LocalPackage",
     defaultLocalization: "en",
     platforms: [
-        .macOS(.v26),
+        .macOS(.v15),
     ],
     products: [
         .library(

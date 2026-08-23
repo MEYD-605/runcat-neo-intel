@@ -91,24 +91,30 @@ public final class Dashboard: Composable {
             }
             runnerBundleList = appStateClient.withLock(\.runnerBundleLists.latestValue) ?? []
             task?.cancel()
-            task = Task.immediate { [weak self, appStateClient] in
+            task = Task { [weak self, appStateClient] in
                 await withTaskGroup { group in
-                    group.addImmediateTask {
+                    group.addTask {
                         let stream = appStateClient.withLock(\.metrics.stream)
                         for await value in stream {
-                            self?.updateMetrics(value)
+                            await MainActor.run {
+                                self?.updateMetrics(value)
+                            }
                         }
                     }
-                    group.addImmediateTask {
+                    group.addTask {
                         let stream = appStateClient.withLock(\.runnerBundles.stream)
                         for await value in stream {
-                            self?.updateCurrentRunner(from: value)
+                            await MainActor.run {
+                                self?.updateCurrentRunner(from: value)
+                            }
                         }
                     }
-                    group.addImmediateTask {
+                    group.addTask {
                         let stream = appStateClient.withLock(\.runnerBundleLists.stream)
                         for await value in stream {
-                            self?.update(runnerBundleList: value)
+                            await MainActor.run {
+                                self?.update(runnerBundleList: value)
+                            }
                         }
                     }
                 }

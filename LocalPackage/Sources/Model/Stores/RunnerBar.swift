@@ -63,23 +63,29 @@ public final class RunnerBar: Composable {
             logService.notice(.screenView(name: screenName))
             self.eventBridge = eventBridge
             task?.cancel()
-            task = Task.immediate { [weak self, appStateClient] in
+            task = Task { [weak self, appStateClient] in
                 await withTaskGroup { group in
-                    group.addImmediateTask {
+                    group.addTask {
                         for await value in StatusBarAppearanceBridge.shared.stream {
-                            self?.update(appearance: value)
+                            await MainActor.run {
+                                self?.update(appearance: value)
+                            }
                         }
                     }
-                    group.addImmediateTask {
+                    group.addTask {
                         let stream = appStateClient.withLock(\.runnerBundles.stream)
                         for await value in stream {
-                            self?.update(runnerBundle: value)
+                            await MainActor.run {
+                                self?.update(runnerBundle: value)
+                            }
                         }
                     }
-                    group.addImmediateTask {
+                    group.addTask {
                         let stream = appStateClient.withLock(\.runnerSpeeds.stream)
                         for await value in stream {
-                            self?.update(runnerSpeed: value)
+                            await MainActor.run {
+                                self?.update(runnerSpeed: value)
+                            }
                         }
                     }
                 }

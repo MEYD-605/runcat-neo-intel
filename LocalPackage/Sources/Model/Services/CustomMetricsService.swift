@@ -32,7 +32,18 @@ struct CustomMetricsService {
 
     private var snapshotDecoder: JSONDecoder = {
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let fallbackFormatter = ISO8601DateFormatter()
+        fallbackFormatter.formatOptions = [.withInternetDateTime]
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let dateStr = try container.decode(String.self)
+            if let date = formatter.date(from: dateStr) ?? fallbackFormatter.date(from: dateStr) {
+                return date
+            }
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid ISO8601 date format: \(dateStr)")
+        }
         return decoder
     }()
 
@@ -89,13 +100,15 @@ struct CustomMetricsService {
     }
 
     func perform(action: (_ securityScopedURL: URL) -> Void, for source: CustomMetricsSource) throws {
-        let (isStale, url) = try urlClient.create(source.bookmark, .withSecurityScope)
-        if isStale, let refreshed = try? urlClient.bookmarkData(url, .withSecurityScope) {
-            persistRefreshedBookmark(refreshed, for: source.id)
+        let url: URL
+        if let (_, resolvedURL) = try? urlClient.create(source.bookmark, .withSecurityScope) {
+            url = resolvedURL
+        } else if let (_, resolvedURL) = try? urlClient.create(source.bookmark, []) {
+            url = resolvedURL
+        } else {
+            url = source.fileURL
         }
-        guard urlClient.startAccessingSecurityScopedResource(url) else {
-            throw RCNError.customMetrics(.fileUnreadable)
-        }
+        _ = urlClient.startAccessingSecurityScopedResource(url)
         defer {
             urlClient.stopAccessingSecurityScopedResource(url)
         }
@@ -209,16 +222,15 @@ struct CustomMetricsService {
             var currentBookmark = source.bookmark
             while !Task.isCancelled {
                 do {
-                    let (isStale, url) = try urlClient.create(currentBookmark, .withSecurityScope)
-                    if isStale, let refreshed = try? urlClient.bookmarkData(url, .withSecurityScope) {
-                        currentBookmark = refreshed
-                        persistRefreshedBookmark(refreshed, for: source.id)
+                    let url: URL
+                    if let (_, resolvedURL) = try? urlClient.create(currentBookmark, .withSecurityScope) {
+                        url = resolvedURL
+                    } else if let (_, resolvedURL) = try? urlClient.create(currentBookmark, []) {
+                        url = resolvedURL
+                    } else {
+                        url = source.fileURL
                     }
-                    guard urlClient.startAccessingSecurityScopedResource(url) else {
-                        emitFailure(for: source)
-                        try await Task.sleep(for: .seconds(5))
-                        continue
-                    }
+                    _ = urlClient.startAccessingSecurityScopedResource(url)
                     defer {
                         urlClient.stopAccessingSecurityScopedResource(url)
                     }

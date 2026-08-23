@@ -28,30 +28,22 @@ private struct SortableViewModifier<Item: Hashable & Identifiable>: ViewModifier
 
     func body(content: Content) -> some View {
         content
-            .draggable(hook(item)) {
-                Color.clear.frame(width: 40, height: 40)
+            .onDrag {
+                draggingItem = item
+                let str = String(describing: item.id)
+                return NSItemProvider(object: str as NSString)
             }
-            .dropDestination(
-                for: DraggableItem.self,
-                isEnabled: true,
-                action: { _, session in
-                    if session.phase == .ended(.move) {
-                        draggingItem = nil
-                    }
+            .onDrop(of: [.text], isTargeted: nil) { providers in
+                guard let draggingItem, draggingItem != item,
+                      let fromIndex = items.firstIndex(of: draggingItem) else { return false }
+                withAnimation(.bouncy) {
+                    items.move(
+                        fromOffsets: IndexSet(integer: fromIndex),
+                        toOffset: index > fromIndex ? index + 1 : index
+                    )
                 }
-            )
-            .dropConfiguration { session in
-                if session.phase == .entering,
-                   let draggingItem, draggingItem != item,
-                   let fromIndex = items.firstIndex(of: draggingItem) {
-                    withAnimation(.bouncy) {
-                        items.move(
-                            fromOffsets: IndexSet(integer: fromIndex),
-                            toOffset: index > fromIndex ? index + 1 : index
-                        )
-                    }
-                }
-                return DropConfiguration(operation: .move)
+                self.draggingItem = nil
+                return true
             }
     }
 
